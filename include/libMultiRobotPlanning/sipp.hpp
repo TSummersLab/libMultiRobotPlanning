@@ -242,11 +242,34 @@ class SIPP {
       m_env.onDiscover(s.state, fScore, gScore);
     }
 
+    std::vector<interval> mergeSortedCollisionIntervals(std::vector<interval>& intervals){
+        int n = intervals.size();
+        if (n == 1) {
+            return intervals;
+        }
+        std::vector<interval> result;
+
+        int i = 0;
+        while (i < n - 1) {
+            if (intervals[i].end >= intervals[i+1].start) {
+                intervals[i+1].start = intervals[i].start;
+                intervals[i+1].end = std::max(intervals[i].end, intervals[i+1].end);
+            } else {
+                result.push_back(intervals[i]);
+            }
+            i++;
+        }
+        result.push_back(intervals[i]);
+
+        return result;
+    }
+
     void setCollisionIntervals(const Location& location,
                                const std::vector<interval>& intervals) {
       m_safeIntervals.erase(location);
       std::vector<interval> sortedIntervals(intervals);
       std::sort(sortedIntervals.begin(), sortedIntervals.end());
+      sortedIntervals = mergeSortedCollisionIntervals(sortedIntervals);
 
       // std::cout << location << ": " << std::endl;
       if (intervals.size() > 0) {

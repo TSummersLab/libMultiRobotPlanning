@@ -154,140 +154,170 @@ class Environment {
   State m_goal;
 };
 
+bool stateInBounds(const State& s, int mdx, int mdy) {
+    return s.x >= 0 && s.x < mdx && s.y >= 0 && s.y < mdy;
+}
+
 int main(int argc, char* argv[]) {
-  namespace po = boost::program_options;
-  // Declare the supported options.
-  po::options_description desc("Allowed options");
-  std::string inputFile;
-  std::string outputFile;
-  desc.add_options()("help", "produce help message")(
-      "input,i", po::value<std::string>(&inputFile)->required(),
-      "input file (YAML)")("output,o",
-                           po::value<std::string>(&outputFile)->required(),
-                           "output file (YAML)")
-      // ("url",
-      // po::value<std::string>(&url)->default_value("http://0.0.0.0:8080"),
-      // "server URL")
-      ;
+    namespace po = boost::program_options;
+    // Declare the supported options.
+    po::options_description desc("Allowed options");
+    std::string inputFile;
+    std::string outputFile;
+    desc.add_options()("help", "produce help message")(
+        "input,i", po::value<std::string>(&inputFile)->required(),
+        "input file (YAML)")("output,o",
+                                po::value<std::string>(&outputFile)->required(),
+                                "output file (YAML)")
+    // ("url",
+    // po::value<std::string>(&url)->default_value("http://0.0.0.0:8080"),
+    // "server URL")
+    ;
 
-  try {
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
+//    auto dx_list = {-1, 0, 1};
+//    auto dy_list = {-1, 0, 1};
+    auto dx_list = {0};
+    auto dy_list = {0};
 
-    if (vm.count("help") != 0u) {
-      std::cout << desc << "\n";
-      return 0;
+    try {
+        po::variables_map vm;
+        po::store(po::parse_command_line(argc, argv, desc), vm);
+        po::notify(vm);
+
+        if (vm.count("help") != 0u) {
+            std::cout << desc << "\n";
+        return 0;
     }
-  } catch (po::error& e) {
-    std::cerr << e.what() << std::endl << std::endl;
-    std::cerr << desc << std::endl;
-    return 1;
-  }
-
-  // Configure SIPP based on config file
-  YAML::Node config = YAML::LoadFile(inputFile);
-
-  std::unordered_set<State> obstacles;
-  std::vector<State> goals;
-  std::vector<State> startStates;
-
-  const auto& dim = config["map"]["dimensions"];
-  int dimx = dim[0].as<int>();
-  int dimy = dim[1].as<int>();
-
-  for (const auto& node : config["map"]["obstacles"]) {
-    obstacles.insert(State(node[0].as<int>(), node[1].as<int>()));
-  }
-
-  for (const auto& node : config["agents"]) {
-    const auto& start = node["start"];
-    const auto& goal = node["goal"];
-    startStates.emplace_back(State(start[0].as<int>(), start[1].as<int>()));
-    goals.emplace_back(State(goal[0].as<int>(), goal[1].as<int>()));
-  }
-  typedef SIPP<State, State, Action, int, Environment> sipp_t;
-
-  std::ofstream out(outputFile);
-  out << "schedule:" << std::endl;
-
-  // Plan (sequentially)
-  std::map<State, std::vector<sipp_t::interval>> allCollisionIntervals;
-  long cost = 0;
-  for (size_t i = 0; i < goals.size(); ++i) {
-    std::cout << "Planning for agent " << i << std::endl;
-    out << "  agent" << i << ":" << std::endl;
-
-    Environment env(dimx, dimy, obstacles, goals[i]);
-    sipp_t sipp(env);
-
-    for (const auto& collisionIntervals : allCollisionIntervals) {
-      sipp.setCollisionIntervals(collisionIntervals.first, collisionIntervals.second);
+    } catch (po::error& e) {
+        std::cerr << e.what() << std::endl << std::endl;
+        std::cerr << desc << std::endl;
+        return 1;
     }
 
-    // Plan
-    PlanResult<State, Action, int> solution;
-    bool success = sipp.search(startStates[i], Action::Wait, solution);
+    // Configure SIPP based on config file
+    YAML::Node config = YAML::LoadFile(inputFile);
 
-    if (success) {
-      std::cout << "Planning successful! Total cost: " << solution.cost
-                << std::endl;
+    std::unordered_set<State> obstacles;
+    std::vector<State> goals;
+    std::vector<State> startStates;
 
-      // update collision intervals
-      auto lastState = solution.states[0];
-      for (size_t i = 1; i < solution.states.size(); ++i) {
-        if (solution.states[i].first != lastState.first) {
-          allCollisionIntervals[lastState.first].push_back(
-            sipp_t::interval(lastState.second, solution.states[i].second - 1));
-          lastState = solution.states[i];
+    const auto& dim = config["map"]["dimensions"];
+    int dimx = dim[0].as<int>();
+    int dimy = dim[1].as<int>();
+
+    for (const auto& node : config["map"]["obstacles"]) {
+        obstacles.insert(State(node[0].as<int>(), node[1].as<int>()));
+    }
+
+    for (const auto& node : config["agents"]) {
+        const auto& start = node["start"];
+        const auto& goal = node["goal"];
+        startStates.emplace_back(State(start[0].as<int>(), start[1].as<int>()));
+        goals.emplace_back(State(goal[0].as<int>(), goal[1].as<int>()));
+    }
+    typedef SIPP<State, State, Action, int, Environment> sipp_t;
+
+    std::ofstream out(outputFile);
+    out << "schedule:" << std::endl;
+
+    // Plan (sequentially)
+    std::map<State, std::vector<sipp_t::interval>> allCollisionIntervals;
+    long cost = 0;
+    for (size_t i = 0; i < goals.size(); ++i) {
+        std::cout << "Planning for agent " << i << std::endl;
+        out << "  agent" << i << ":" << std::endl;
+
+        Environment env(dimx, dimy, obstacles, goals[i]);
+        sipp_t sipp(env);
+
+        for (const auto& collisionIntervals : allCollisionIntervals) {
+            sipp.setCollisionIntervals(collisionIntervals.first, collisionIntervals.second);
         }
-      }
-      allCollisionIntervals[solution.states.back().first].push_back(
-            sipp_t::interval(solution.states.back().second, std::numeric_limits<int>::max()));
-      // update statistics
-      cost += solution.cost;
 
-      // print solution
-      for (size_t i = 0; i < solution.actions.size(); ++i) {
-        std::cout << solution.states[i].second << ": " << solution.states[i].first
-                  << "->" << solution.actions[i].first
-                  << "(cost: " << solution.actions[i].second << ")" << std::endl;
-      }
-      std::cout << solution.states.back().second << ": "
-                << solution.states.back().first << std::endl;
+        // Plan
+        PlanResult<State, Action, int> solution;
+        bool success = sipp.search(startStates[i], Action::Wait, solution);
 
-      for (size_t i = 0; i < solution.states.size(); ++i) {
-        out << "    - x: " << solution.states[i].first.x << std::endl
-            << "      y: " << solution.states[i].first.y << std::endl
-            << "      t: " << solution.states[i].second << std::endl;
-      }
-    } else {
-      std::cout << "Planning NOT successful!" << std::endl;
-      out << "    []" << std::endl;
+        if (success) {
+            std::cout << "Planning successful! Total cost: " << solution.cost << std::endl;
+
+            // update collision intervals
+            auto lastState = solution.states[0];
+            for (size_t i = 1; i < solution.states.size(); ++i) {
+                    allCollisionIntervals[lastState.first].push_back(
+                        sipp_t::interval(lastState.second, solution.states[i].second));
+                    // also add cells around lastState
+                    auto x = lastState.first.x;
+                    auto y = lastState.first.y;
+                    for(auto dx : dx_list){
+                        for(auto dy : dy_list){
+                            State area_s(x + dx, y + dy);
+                            if (stateInBounds(area_s, dimx, dimy)){
+                                allCollisionIntervals[area_s].push_back(
+                                sipp_t::interval(std::max(0, lastState.second-1), solution.states[i].second));
+                            }
+                        }
+                    }
+                lastState = solution.states[i];
+            }
+            allCollisionIntervals[solution.states.back().first].push_back(
+                sipp_t::interval(solution.states.back().second, std::numeric_limits<int>::max()));
+            auto x = solution.states.back().first.x;
+            auto y = solution.states.back().first.y;
+            for(auto dx : dx_list){
+                for(auto dy : dy_list){
+                    if(dx == 0 && dy == 0){
+                        continue;
+                    }
+                    State area_s(x + dx, y + dy);
+                    if (stateInBounds(area_s, dimx, dimy)){
+                        allCollisionIntervals[area_s].push_back(
+                            sipp_t::interval(solution.states.back().second, std::numeric_limits<int>::max()));
+                    }
+                }
+            }
+            // update statistics
+            cost += solution.cost;
+
+            // print solution
+            for (size_t i = 0; i < solution.actions.size(); ++i) {
+                std::cout << solution.states[i].second << ": " << solution.states[i].first
+                << "->" << solution.actions[i].first
+                << "(cost: " << solution.actions[i].second << ")" << std::endl;
+            }
+            std::cout << solution.states.back().second << ": "
+                      << solution.states.back().first << std::endl;
+
+            for (size_t i = 0; i < solution.states.size(); ++i) {
+                out << "    - x: " << solution.states[i].first.x << std::endl
+                << "      y: " << solution.states[i].first.y << std::endl
+                << "      t: " << solution.states[i].second << std::endl;
+            }
+        } else {
+            std::cout << "Planning NOT successful!" << std::endl;
+            out << "    []" << std::endl;
+        }
     }
 
-
-  }
-
-  out << "statistics:" << std::endl;
-  out << "  cost: " << cost << std::endl;
-  // out << "  makespan: " << makespan << std::endl;
-  // out << "  runtime: " << timer.elapsedSeconds() << std::endl;
+    out << "statistics:" << std::endl;
+    out << "  cost: " << cost << std::endl;
+    // out << "  makespan: " << makespan << std::endl;
+    // out << "  runtime: " << timer.elapsedSeconds() << std::endl;
 
 
 
 
-  // for (const auto& node : config["environment"]["collisionIntervals"]) {
-  //   State state(node["location"][0].as<int>(), node["location"][1].as<int>());
+    // for (const auto& node : config["environment"]["collisionIntervals"]) {
+    //   State state(node["location"][0].as<int>(), node["location"][1].as<int>());
 
-  //   std::vector<sipp_t::interval> collisionIntervals;
+    //   std::vector<sipp_t::interval> collisionIntervals;
 
-  //   for (const auto& interval : node["intervals"]) {
-  //     collisionIntervals.emplace_back(
-  //         sipp_t::interval(interval[0].as<int>(), interval[1].as<int>()));
-  //   }
-  //   sipp.setCollisionIntervals(state, collisionIntervals);
-  // }
+    //   for (const auto& interval : node["intervals"]) {
+    //     collisionIntervals.emplace_back(
+    //         sipp_t::interval(interval[0].as<int>(), interval[1].as<int>()));
+    //   }
+    //   sipp.setCollisionIntervals(state, collisionIntervals);
+    // }
 
 
 

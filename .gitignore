@@ -1,3 +1,6 @@
 build/
 __pycache__/
 *.kdev4*
+*.mp4
+demo/scenarios/*
+!demo/scenarios/0/

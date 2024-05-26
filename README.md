@@ -67,3 +67,11 @@ python3 ../tools/annotate_roadmap.py ../test/mapf_simple1_roadmap_to_annotate.ya
 ./cbs_roadmap -i mapf_simple1_roadmap_annotated.yaml -o output.yaml
 python3 ../example/visualize_roadmap.py mapf_simple1_roadmap_annotated.yaml output.yaml
 ```
+
+# MAPF Demo
+`demo` directory contains some demo code targeting the TurtleBot platform.
+To run the demo, follow these steps.
+1. Build the `libMultiRobotPlanning` package as described above. 
+2. (Optional) Add a scenario by creating a folder in `demo/scenarios` and add the `agents.txt` and `env.txt` files. 
+3. Set the scenario name in the `demo/mapf.py` script by editing the `rel_path` variable.
+4. Run the `mapf.py` script. This will generate the schedule and the video visualization.
