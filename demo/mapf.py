@@ -27,9 +27,27 @@ def generate_schedule(scenario_yaml, relative_path=".", create_video=False, algo
              cleaned_output_yaml,
              "--video", os.path.splitext(scenario_yaml)[0] + "_" + algo + "_video.mp4"],
             check=True)
-    print('Done!')
+        print('Generating video done)')
+
+    print('Saving cleaned yaml')
     with open(cleaned_output_yaml) as output_file:
-        return yaml.safe_load(output_file)
+        yaml.safe_load(output_file)
+
+    print('Saving text version of yaml that can be read into a balanced list')
+    schedule_output_txt = os.path.join(relative_path, "schedule.txt")
+    schedule_list = read_clean_yaml_into_list(cleaned_output_yaml)
+    save_schedule_list_to_file(schedule_list, schedule_output_txt)
+    schedule_list_read = read_schedule_list_from_file(schedule_output_txt)
+    print('Saved txt file, when read into list, matches the original schedule list: ', schedule_list == schedule_list_read)
+
+    print('Saving schedule list using global coordinates')
+    schedule_output_global_txt = os.path.join(relative_path, "schedule_global.txt")
+    schedule_list_global = transform_coordinates_to_world(schedule_list, x0=5, y0=7, grid_len=0.582)
+    save_schedule_list_to_file(schedule_list_global, schedule_output_global_txt)
+    schedule_list_global_read = read_schedule_list_from_file(schedule_output_global_txt)
+    print('Saved global txt file, when read into list, matches the original schedule list: ',
+          schedule_list_global == schedule_list_global_read)
+    print("Done!")
 
 
 if __name__ == '__main__':

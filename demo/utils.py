@@ -106,6 +106,97 @@ def cleanup_result_yaml_file(output_yaml, cleaned_output_yaml, start_positions=N
         print("The failed ones are: ", failed)
 
 
+def read_clean_yaml_into_list(file_path):
+    # Read the YAML file
+    with open(file_path, 'r') as file:
+        data = yaml.safe_load(file)
+
+    # Extract the schedule
+    schedule = data.get('schedule', {})
+
+    # Initialize the schedule_list
+    schedule_list = []
+
+    agent_index = -1
+    # Iterate over the agents in the schedule
+    for agent, points in schedule.items():
+        agent_index += 1
+        schedule_list.append([])  # add a list to save the data of the current agent
+
+        # Iterate over the points for the current agent
+        for point in points:
+            t = point['t']
+            x = point['x']
+            y = point['y']
+
+            # Add a point to the list
+            schedule_list[agent_index].append([x, y])
+
+    # Pad out the sublists with the last (x, y) values
+    max_length = max(len(sublist) for sublist in schedule_list)
+    for sublist in schedule_list:
+        while len(sublist) < max_length:
+            sublist.append(sublist[-1])
+
+    return schedule_list
+
+
+def save_schedule_list_to_file(schedule_list, file_path):
+    # Open the file in write mode
+    with open(file_path, 'w') as file:
+        # Iterate over each agent's list
+        for agent_list in schedule_list:
+            # Convert each (x, y) tuple to a string and join them with commas
+            line = ','.join(f"{x} {y}" for x, y in agent_list)
+            # Write the line to the file
+            file.write(line + '\n')
+
+
+def read_schedule_list_from_file(file_path):
+    # Initialize the schedule_list
+    schedule_list = []
+    # Open the file in read mode
+    with open(file_path, 'r') as file:
+        # Read each line from the file
+        for line in file:
+            # Split the line by commas and convert each part to a tuple of integers
+            agent_list = [list(map(float, point.split())) for point in line.strip().split(',')]
+            # Append the agent list to schedule_list
+            schedule_list.append(agent_list)
+    # Return the schedule_list
+    return schedule_list
+
+
+def transform_coordinates_to_world(s_list, x0, y0, grid_len):
+    """
+    Converts the schedule list from a grid coordinate to world coordinates.
+    args:
+        s_list: schedule list using grid indices
+        x0: index of grid cell that corresponds to the world x=0
+        y0: index of grid cell that corresponds to the world y=0
+        grid_len: length of the side of a grid cell (meters)
+    """
+    # Initialize the new list for world coordinates
+    new_s_list = []
+
+    # Iterate over each agent's list in s_list
+    for agent_list in s_list:
+        # Initialize the new agent list for world coordinates
+        new_agent_list = []
+        # Iterate over each (x, y) tuple in the agent's list
+        for x, y in agent_list:
+            # Apply the transformation to match the world coordinates
+            new_x = (x - x0) * grid_len
+            new_y = (y - y0) * grid_len
+            # Append the new (x, y) tuple to the new agent list
+            new_agent_list.append([new_x, new_y])
+        # Append the new agent list to the new_s_list
+        new_s_list.append(new_agent_list)
+
+    # Return the new list with world coordinates
+    return new_s_list
+
+
 if __name__ == "__main__":
     rel_path = os.path.join("scenarios", "0")
     file_path_agents = os.path.join(rel_path, "agents.txt")

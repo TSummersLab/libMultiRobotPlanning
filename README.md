@@ -25,7 +25,8 @@ The following algorithms are currently supported:
 
 ## Building
 
-Tested on Ubuntu 16.04.
+Tested on Ubuntu 22.04.
+Originally tested on Ubuntu 16.04.
 
 ```
 mkdir build
@@ -33,6 +34,9 @@ cd build
 cmake ..
 make
 ```
+
+Note: To generate videos, `ffmpeg` is required.
+Install with `sudo apt install ffmpeg`
 
 ### Targets
 
@@ -69,7 +73,7 @@ python3 ../example/visualize_roadmap.py mapf_simple1_roadmap_annotated.yaml outp
 ```
 
 # MAPF Demo
-`demo` directory contains some demo code targeting the TurtleBot platform.
+The `demo` directory contains some demo code targeting the TurtleBot platform.
 To run the demo, follow these steps.
 1. Build the `libMultiRobotPlanning` package as described above. 
 2. (Optional) Add a scenario by creating a folder in `demo/scenarios` and add the `agents.txt` and `env.txt` files. 

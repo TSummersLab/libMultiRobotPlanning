@@ -4,3 +4,4 @@ __pycache__/
 *.mp4
 demo/scenarios/*
 !demo/scenarios/0/
+.idea/
