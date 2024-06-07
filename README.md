@@ -76,6 +76,44 @@ python3 ../example/visualize_roadmap.py mapf_simple1_roadmap_annotated.yaml outp
 The `demo` directory contains some demo code targeting the TurtleBot platform.
 To run the demo, follow these steps.
 1. Build the `libMultiRobotPlanning` package as described above. 
-2. (Optional) Add a scenario by creating a folder in `demo/scenarios` and add the `agents.txt` and `env.txt` files. 
+2. (Optional) Add a scenario by creating a folder in `demo/scenarios` and add the `agents.txt` and `env.txt` files.
 3. Set the scenario name in the `demo/mapf.py` script by editing the `rel_path` variable.
 4. Run the `mapf.py` script. This will generate the schedule and the video visualization.
+
+Once `mapf.py` executes, it will output the trajectories and indicate if planning for any of the robots failed (they will be kept in place which causes collisions since other agents will ignore them).
+The script will also save a video (optional) of the solution and two schedule text files: `schedule.txt` and `schedule_global.txt`.
+Both text files contain the same information, but the difference is in the coordinate frames.
+- `schedule.txt` is with respect to the grid in which the planning happened, so all values will correspond to cell indices.
+- `scehdule_global.txt` transforms the data in `schedule.txt` to a real world global coordinate frame where the center is placed at one of the grid's corners and the cells of the grid are mapped to a square region in the real world global coordinate frame whose size is given in meters.
+
+The latter is useful when, for example, using the schedule to operate physical robots in a motion capture environment. 
+
+---
+**NOTE**
+
+The `agents.txt` file should contain the start and goal locations of the agents organized as follows:
+```
+sx0, sy0, gx0, gy0
+sx1, sy1, gx1, gy1
+...
+```
+where `(sx0, sy0), (gx0, gy0)` are the start and end `(x,y)` position of agent0 and similarly for other agents.
+
+The `env.txt` file should contain the size of the grid and the location of the obstacle organized as follows:
+```
+m, n
+x0, y0
+x1, y1
+...
+```
+where `m, n` is the size of the map and `(x0, y0)` is the position of obstacle0 and similarly for other agents.
+
+The start, goal, and obstacle locations are the indices of the cells in the `m x n` grid. The MAPF problem will be solved in this discrete environment.
+
+Converting to a global coordinate frame is done through the `transform_coordinates_to_world` function in `demo/mapf.py`.  
+
+Also, no empty lines are allowed (even at the end of the file).
+
+---
+
+

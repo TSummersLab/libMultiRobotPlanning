@@ -101,7 +101,7 @@ def cleanup_result_yaml_file(output_yaml, cleaned_output_yaml, start_positions=N
         yaml.safe_dump(data, file)
 
     # Print info about the robots for which planning failed
-    print("{} kings have failed out of {}".format(len(failed), total))
+    print("{} agents have failed out of {}".format(len(failed), total))
     if failed:
         print("The failed ones are: ", failed)
 

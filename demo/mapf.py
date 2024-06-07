@@ -4,7 +4,8 @@ import os
 from utils import *
 
 
-def generate_schedule(scenario_yaml, relative_path=".", create_video=False, algo='sipp', start_pos=None):
+def generate_schedule(scenario_yaml, relative_path=".", create_video=False, algo='sipp', start_pos=None,
+                      x0=0, y0=0, grid_len=1):
     output_yaml = os.path.join(relative_path, "output.yaml")
     cleaned_output_yaml = os.path.join(relative_path, "output_cleaned.yaml")
     if algo == 'sipp':
@@ -42,7 +43,7 @@ def generate_schedule(scenario_yaml, relative_path=".", create_video=False, algo
 
     print('Saving schedule list using global coordinates')
     schedule_output_global_txt = os.path.join(relative_path, "schedule_global.txt")
-    schedule_list_global = transform_coordinates_to_world(schedule_list, x0=5, y0=7, grid_len=0.582)
+    schedule_list_global = transform_coordinates_to_world(schedule_list, x0=x0, y0=y0, grid_len=grid_len)
     save_schedule_list_to_file(schedule_list_global, schedule_output_global_txt)
     schedule_list_global_read = read_schedule_list_from_file(schedule_output_global_txt)
     print('Saved global txt file, when read into list, matches the original schedule list: ',
@@ -51,13 +52,23 @@ def generate_schedule(scenario_yaml, relative_path=".", create_video=False, algo
 
 
 if __name__ == '__main__':
-    rel_path = os.path.join("scenarios", "0")
+    x0, y0 = 5, 7  # Cell index that corresponds to the origin in the real world global frame
+    grid_len = 0.582  # [m]: Length of the side of a grid cell in the real world global frame in meters
+    rel_path = os.path.join("scenarios", "0")  # path to the scenario
+
+    # don't change these unless you change the file naming convention
     file_path_agents = os.path.join(rel_path, "agents.txt")
     file_path_env = os.path.join(rel_path, "env.txt")
     file_path_scenario_yaml = os.path.join(rel_path, "scenario.yaml")
 
+    # these will read the files
     N, start_loc, goal_loc = read_agents_file(file_path_agents)
     m, n, obstacles = read_env_file(file_path_env)
     generate_scenario_yaml_file(m, n, start_loc, goal_loc, obstacles, file_path_scenario_yaml)
 
-    r = generate_schedule(file_path_scenario_yaml, rel_path, create_video=True, algo='sipp', start_pos=start_loc)
+    # this will solve the MAPF problem
+    r = generate_schedule(file_path_scenario_yaml, rel_path,
+                          create_video=True,
+                          algo='sipp',
+                          start_pos=start_loc,
+                          x0=x0, y0=y0, grid_len=grid_len)
